@@ -67,11 +67,16 @@
 			<div class="tsd-panel tsd-typography">
 				<h1 id="cyclejs-sortable">cyclejs-sortable</h1>
 				<p>Makes all children of a selected component sortable</p>
+				<p>Github Repo: <a href="https://github.com/SuperManitu/cyclejs-sortable">https://github.com/SuperManitu/cyclejs-sortable</a></p>
 				<p>Full documentation: <a href="https://supermanitu.github.io/cyclejs-sortable/">https://supermanitu.github.io/cyclejs-sortable/</a></p>
-				<p>##Required Polyfills
-				The code uses a few ES6 features, so you might need an es6 polyfill like <code>babel-polyfill</code></p>
-				<p>The use the code in IE you have to add a CustomEvent constructor polyfill like <a href="https://www.npmjs.com/package/custom-event">https://www.npmjs.com/package/custom-event</a></p>
-				<h2 id="usage">Usage</h2>
+				<p>NPM: <a href="https://www.npmjs.com/package/cyclejs-sortable">https://www.npmjs.com/package/cyclejs-sortable</a></p>
+				<h2 id="required-polyfills">Required Polyfills</h2>
+				<p>The code uses a few ES6 features, so you might need an es6 polyfill like <code>babel-polyfill</code></p>
+				<p>The use the <code>updateOrder Event</code> in IE you have to add a CustomEvent constructor polyfill like <a href="https://www.npmjs.com/package/custom-event">https://www.npmjs.com/package/custom-event</a></p>
+				<h2 id="installation">Installation</h2>
+				<p><code>npm install --save cyclejs-sortable</code></p>
+				<h2 id="basic-usage">Basic Usage</h2>
+				<p>For more information see the <a href="https://github.com/SuperManitu/cyclejs-sortable/tree/master/examples">examples</a></p>
 				<pre><code><span class="hljs-keyword">function</span> <span class="hljs-title">main</span>(sources)
 {
     <span class="hljs-keyword">return</span> <span class="hljs-type">{</span>
@@ -84,10 +89,7 @@
         .compose(makeSortable(DOM))
     }
 }
-</code></pre><h2 id="options">Options</h2>
-				<p><code>restrictMovementArea</code>: A selector that defines the area in which the children can be dragged</p>
-				<p><code>handle</code>: A sector to define a handle for moving the items</p>
-				<p><code>ghostClass</code>: A classname to be applied to the ghost</p>
+</code></pre>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
