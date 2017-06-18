@@ -49,32 +49,35 @@ export function makeSortable<T>(dom : DOMSource, options? : SortableOptions) : (
                 .map(addKeys)
                 .map(node => {
                     const defaults : SortableOptions = applyDefaults(options || {}, node);
-
-                    const mousedown$ : Stream<MouseEvent> = xs.merge(
+                    const down$ = xs.merge(
                         xs.fromObservable(dom.select(defaults.handle).events('mousedown')),
                         xs.fromObservable(dom.select(defaults.handle).events('touchstart'))
                             .map(augmentEvent)
-                    ) as Stream<MouseEvent>;
+                    )
+                    const up$ = xs.merge(
+                        xs.fromObservable(dom.select('body').events('mouseleave')),
+                        xs.fromObservable(dom.select('body').events('mouseup')),
+                        xs.fromObservable(dom.select(defaults.handle).events('touchend'))
+                    )
+                    
+                    const move$ = xs.merge(
+                        xs.fromObservable(dom.select('body').events('mousemove')),
+                        xs.fromObservable(dom.select(defaults.handle).events('touchmove'))
+                            .map(augmentEvent)
+                    )
 
-                    const mouseup$ : Stream<MouseEvent> = mousedown$
-                        .map(_  => 
-                            xs.merge(
-                                xs.fromObservable(dom.select('body').events('mouseleave')),
-                                xs.fromObservable(dom.select('body').events('mouseup')),
-                                xs.fromObservable(dom.select(defaults.handle).events('touchend'))
-                            )
-                            .take(1)
-                        ).flatten() as Stream<MouseEvent>;
+                    const mousedown$ : Stream<MouseEvent> =
+                        down$.map(ev => xs.of(ev).compose(delay(options.selectionDelay)).endWhen(xs.merge(up$, move$)))
+                            .flatten() as Stream<MouseEvent>;
+
+                    const mouseup$ : Stream<MouseEvent> = 
+                        mousedown$.map(_  => up$.take(1)).flatten() as Stream<MouseEvent>;
 
                     const mousemove$ : Stream<MouseEvent> = mousedown$
                         .map(start => {
-                            return xs.merge(
-                                xs.fromObservable(dom.select('body').events('mousemove')),
-                                xs.fromObservable(dom.select(defaults.handle).events('touchmove'))
-                                    .map(augmentEvent)
-                            )
-                            .map(ev => augmentStartDistance(ev, start.clientX, start.clientY))
-                            .endWhen(mouseup$)
+                            return move$
+                                .map(ev => augmentStartDistance(ev, start.clientX, start.clientY))
+                                .endWhen(mouseup$)
                         })
                         .flatten() as Stream<MouseEvent>;
                     const event$ : Stream<MouseEvent> = xs.merge(mousedown$, mouseup$, mousemove$);

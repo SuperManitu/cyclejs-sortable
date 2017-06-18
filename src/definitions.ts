@@ -29,6 +29,14 @@ export interface SortableOptions {
      * @type {string}
      */
     ghostClass? : string;
+
+    /**
+     * Optional, number of milliseconds to
+     * wait after mousedown/touchstart before selecting the item
+     * @default number in milliseconds, defaults to 0
+     * @type {number}
+     */
+    selectionDelay? : number;
 }
 
 /**

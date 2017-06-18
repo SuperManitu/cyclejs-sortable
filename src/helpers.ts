@@ -21,7 +21,8 @@ export function applyDefaults(options : SortableOptions, root : VNode) : Sortabl
     return {
         parentSelector: options.parentSelector || '.' + classNameFromVNode(root).split(' ').join('.'),
         handle: options.handle || itemSelector,
-        ghostClass: options.ghostClass || ''
+        ghostClass: options.ghostClass || '',
+        selectionDelay: options.selectionDelay || 0
     };
 }
 
