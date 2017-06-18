@@ -25,7 +25,7 @@ export interface SortableOptions {
     /**
      * Optional, has to be a CSS class name
      * Can be used to style the ghost item
-     * @default the first CSS class of the first item
+     * @default string ''
      * @type {string}
      */
     ghostClass? : string;
@@ -40,7 +40,23 @@ export interface MouseOffset
 {
     x : number;
     y : number;
+    itemLeft: number;
+    itemTop: number;
+    parentLeft: number;
+    parentTop: number;
 }
+
+/**
+ * Contains the offset from mousedown position
+ * distX and distY increase going down and to the left
+ * @type {StartPositionOffset}
+ */
+export interface StartPositionOffset extends MouseEvent
+{
+    distX: number;
+    distY: number;
+}
+
 
 /**
  * Defines the object available on a custom updateOrder event
