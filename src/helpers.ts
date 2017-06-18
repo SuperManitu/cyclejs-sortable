@@ -1,7 +1,7 @@
 import { VNode, VNodeData } from '@cycle/dom';
 import { select, classNameFromVNode } from 'snabbdom-selector';
 
-import { SortableOptions, MouseOffset, ItemDimensions, Intersection } from './definitions';
+import { SortableOptions, MouseOffset, StartPositionOffset, ItemDimensions, Intersection } from './definitions';
 
 /**
  * Takes the maybe undefined options and fills them with defaults
@@ -21,7 +21,8 @@ export function applyDefaults(options : SortableOptions, root : VNode) : Sortabl
     return {
         parentSelector: options.parentSelector || '.' + classNameFromVNode(root).split(' ').join('.'),
         handle: options.handle || itemSelector,
-        ghostClass: options.ghostClass || ''
+        ghostClass: options.ghostClass || '',
+        selectionDelay: options.selectionDelay || 0
     };
 }
 
@@ -94,30 +95,31 @@ export function replaceNode(root : VNode, selector : string, replacement : VNode
 
 /**
  * Gets the correct style attribute value for the given parameters
- * @param {MouseEvent} event the mouse event that was triggered
+ * @param {StartPositionOffset} event the mouse event that was triggered, enriched with distance information
  * @param {MouseOffset} mouseOffset the offset of the item
  * @param {ClientRect} itemRect the bounding client rect of the item
  * @return {string} the style value
  */
-export function getGhostStyle(event : MouseEvent, mouseOffset : MouseOffset, item : Element) : string
+export function getGhostStyle(mouseOffset : MouseOffset, item : Element) : string
 {
     const itemRect : ClientRect = item.getBoundingClientRect();
-    return 'z-index: 5; margin: 0; pointer-events: none; position: absolute; width: '
-        + itemRect.width + 'px; ' + 'height: ' + itemRect.height + 'px; top: '
-        + (event.clientY + mouseOffset.y + window.screenY) + 'px; left: '
-        + (event.clientX + mouseOffset.x + window.scrollX) + 'px;';
+    return 'z-index: 5; margin: 0; pointer-events: none; position: absolute; ' + 
+        'width: ' + itemRect.width + 'px; ' + 
+        'height: ' + itemRect.height + 'px; ' +
+        'top: ' + (mouseOffset.itemTop - mouseOffset.parentTop) + 'px; ' +
+        'left: ' + (mouseOffset.itemLeft - mouseOffset.parentLeft) + 'px;';
 }
 
 /**
  * Returns the updated style for this ghost element
  */
-export function updateGhostStyle(event : MouseEvent, mouseOffset : MouseOffset, ghost : Element) : string
+export function updateGhostStyle(event : StartPositionOffset, mouseOffset : MouseOffset, ghost : Element) : string
 {
     const prevStyle : string = ghost.getAttribute('style');
     
     return prevStyle.substring(0, prevStyle.indexOf(' top:')) + ' top: '
-        + (event.clientY + mouseOffset.y + window.scrollY) + 'px; left: '
-        + (event.clientX + mouseOffset.x + window.scrollX) + 'px;';
+        + (mouseOffset.itemTop - mouseOffset.parentTop + event.distY) + 'px; left: '
+        + (mouseOffset.itemLeft - mouseOffset.parentLeft + event.distX) + 'px;';
 }
 
 /**
@@ -148,14 +150,32 @@ export function findParent(node : Element, selector : string) : Element
 }
 
 /**
- * Adds the given attribute savely to the VNode
+ * Adds the given attribute safely to the VNode
  * @param {VNode} node the VNode to add the attributes on
  * @param {any} addition the new attributes
  * @return {VNode} the newly created VNode
  */
-export function addAttributes(e : VNode, newAttr : { [attr : string]: any }) : VNode
+export function addAttributes(e : VNode, newAttr : { [attr : string]: any }, ghostClass?: string) : VNode
 {
-    const addition : any = { attrs: Object.assign({}, e.data ? e.data.attrs : undefined, newAttr) };
+    const addition : any = { 
+        attrs: Object.assign({}, e.data ? e.data.attrs : undefined, newAttr)
+    };
+    return addToData(e, addition);
+}
+
+/**
+ * Adds the given class safely to the VNode
+ * @param {VNode} node the VNode to add the attributes on
+ * @param {any} addition the css ghost class
+ * @return {VNode} the newly created VNode
+ */
+export function addGhostClass(e : VNode, ghostClass?: string) : VNode
+{
+    const className = (ghostClass && ghostClass.length > 1) ? ghostClass[0] === '.' ? ghostClass.substring(1) : ghostClass : undefined
+    const classVal = className ? {[className]: true} : undefined
+    const addition : any = { 
+        class: classVal
+    };
     return addToData(e, addition);
 }
 
@@ -179,7 +199,7 @@ export function removeAttribute(node : VNode, attributeName : string) : VNode
 }
 
 /**
- * Adds the given additions savely to the VNode
+ * Adds the given additions safely to the VNode
  * @param {VNode} node the VNode to add the additions on
  * @param {any} addition the new additions
  * @return {VNode} the newly created VNode
