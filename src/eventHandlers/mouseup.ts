@@ -1,8 +1,8 @@
 import { VNode } from '@cycle/dom';
 
 import { SortableOptions } from '../makeSortable';
-import { addDataEntry } from '../helpers';
-import { selectNames } from './mousedown';
+import { cloneNodeWithData } from '../helpers';
+import { textSelectionClasses } from './utils';
 
 export function mouseupHandler(
     node: VNode,
@@ -10,13 +10,12 @@ export function mouseupHandler(
     opts: SortableOptions
 ): [VNode, undefined] {
     const children = node.children.slice(0, -1).map(cleanup);
-
     return [
         {
             ...deleteData(
                 node,
                 'style',
-                ['position'].concat(selectNames),
+                ['position'].concat(textSelectionClasses),
                 true
             ),
             children

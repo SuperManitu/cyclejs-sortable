@@ -1,8 +1,11 @@
 import { VNode } from '@cycle/dom';
 
 import { SortableOptions, UpdateOrder } from '../makeSortable';
-import { addDataEntry } from '../helpers';
+import { cloneNodeWithData } from '../helpers';
+import { updateGhost } from '../ghost';
+import { getIntersection, getArea } from './utils';
 
+const nodeIsGhost = el => (el as any).dataset.ghost;
 export function mousemoveHandler(
     node: VNode,
     ev: MouseEvent,
@@ -16,97 +19,46 @@ export function mousemoveHandler(
         item.parentElement.children
     );
     const index = siblings.indexOf(item);
-    const ghost = siblings.filter(el => (el as any).dataset.ghost)[0];
+    const ghost = siblings.filter(nodeIsGhost)[0];
     const itemArea = getArea(ghost);
-    let swapIndex = index;
-
+    const swapIndex = getSwapIndex(index, ghost, siblings);
     const children = node.children.slice(0) as VNode[];
+    const orderUpdate = getOrderUpdate(index, swapIndex, children);
+    children[children.length - 1] = updateGhost(
+        children[children.length - 1],
+        ev
+    );
+    return [{ ...node, children }, orderUpdate];
+}
 
-    if (index > 0 && getIntersection(ghost, siblings[index - 1], true) > 0) {
-        swapIndex = index - 1;
-    } else if (
-        index < siblings.length - 2 &&
-        getIntersection(ghost, siblings[index + 1], false) > 0
-    ) {
-        swapIndex = index + 1;
+const isAbove = (index, ghost, siblings) =>
+    index > 0 && getIntersection(ghost, siblings[index - 1], true) > 0;
+const isBelow = (index, ghost, siblings) =>
+    index < siblings.length - 2 &&
+    getIntersection(ghost, siblings[index + 1], false) > 0;
+function getSwapIndex(index, ghost, siblings) {
+    if (isAbove(index, ghost, siblings)) {
+        return index - 1;
+    } else if (isBelow(index, ghost, siblings)) {
+        return index + 1;
+    } else {
+        return index;
     }
+}
 
-    let updateOrder: UpdateOrder | undefined = undefined;
-
+function swapChildren(indexA, indexB, children) {
+    const A = children[indexA];
+    children[indexA] = children[indexB];
+    children[indexB] = A;
+}
+function getOrderUpdate(index, swapIndex, children) {
     if (swapIndex !== index) {
-        const tmp = children[index];
-        children[index] = children[swapIndex];
-        children[swapIndex] = tmp;
-
-        updateOrder = {
+        swapChildren(index, swapIndex, children);
+        return {
             indexMap: [],
             oldIndex: index,
             newIndex: swapIndex
         };
     }
-
-    children[children.length - 1] = updateGhost(
-        children[children.length - 1],
-        ev
-    );
-
-    return [
-        {
-            ...node,
-            children
-        },
-        updateOrder
-    ];
-}
-
-function getArea(item: Element): number {
-    const rect = item.getBoundingClientRect();
-    return rect.width * rect.height;
-}
-
-function getIntersectionArea(rectA: any, rectB: any): number {
-    let a =
-        Math.min(rectA.right, rectB.right) - Math.max(rectA.left, rectB.left);
-    a = a < 0 ? 0 : a;
-    const area =
-        a *
-        (Math.min(rectA.bottom, rectB.bottom) - Math.max(rectA.top, rectB.top));
-    return area < 0 ? 0 : area;
-}
-
-function getIntersection(ghost: Element, elm: Element, upper: boolean): number {
-    const f = 0.25;
-    const _a = (upper ? ghost : elm).getBoundingClientRect();
-    const _b = (upper ? elm : ghost).getBoundingClientRect();
-    const a = {
-        left: _a.left,
-        right: _a.right,
-        top: _a.top,
-        bottom: _a.bottom
-    };
-    const b = {
-        left: _b.left,
-        right: _b.right,
-        top: _b.top,
-        bottom: _b.bottom
-    };
-
-    const aRight = { ...a, left: a.right - (a.right - a.left) * f };
-    const aBottom = { ...a, top: a.bottom - (a.bottom - a.top) * f };
-
-    const bLeft = { ...b, right: b.left + (b.right - b.left) * f };
-    const bTop = { ...b, bottom: b.top + (b.bottom - b.top) * f };
-
-    const area =
-        getIntersectionArea(aRight, bLeft) + getIntersectionArea(aBottom, bTop);
-
-    return area < 0 ? 0 : area;
-}
-
-function updateGhost(node: VNode, ev: MouseEvent): VNode {
-    const { offsetX, offsetY } = node.data.dataset as any;
-    return addDataEntry(node, 'style', {
-        left: ev.clientX - offsetX + 'px',
-        top: ev.clientY - offsetY + 'px'
-    });
+    return undefined;
 }
